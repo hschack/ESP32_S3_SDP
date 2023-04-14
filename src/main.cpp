@@ -5,7 +5,7 @@ Project Name        :
 Author              : HS
 Start Date          : 
 Chip                : 
-Copyright(c) 2022, All Rights Reserved.
+Copyright(c) 2023, All Rights Reserved.
 -------------------------------------------------------------------------------
 Description: Draft Samsø Boiler 4
 -----------------------------------------------------------------------------*/
@@ -18,7 +18,7 @@ Description: Draft Samsø Boiler 4
 #include "secrets.h"
 #include "ThingSpeak.h" // always include thingspeak header file after other header files and custom macros
 /***************************   Defines   *************************************/
-//#define LED_BUILTIN                       32 // the number of the ALIVELED_BUILTIN pin
+#define LED                       7 // the number of the ALIVELED pin
 #define SDP810_I2C_ADDR           0x25 // I2C Address for SDP8xx device
 #define FILTER_CONST              0.90f //
 #define PRINT_DEBUG_MESSAGES
@@ -30,18 +30,18 @@ Description: Draft Samsø Boiler 4
 /***************************   Data Types   **********************************/
 /***************************   Local Variables   *****************************/
 bool                SendStatus = false;
-volatile float               FilteredPressure_1 = 0;
-volatile float               FilteredTemperatur_1 = 0;
-volatile float               pa_low               = 0;
-volatile float               pa_high              = 0;
+volatile float      FilteredPressure_1       = 0;
+volatile float      FilteredTemperatur_1     = 0;
+volatile float      pa_low                   = 0;
+volatile float      pa_high                  = 0;
 //
-unsigned int        ResetCounter       = 0;
-unsigned int        LED_BUILTINOnOffTime       = 5000;
-unsigned long       previousMillis     = 0; // will store last time LED_BUILTIN was updated
+unsigned int        ResetCounter             = 0;
+unsigned int        LEDOnOffTime     = 5000;
+unsigned long       previousMillis           = 0; // will store last time LED was updated
 unsigned long       currentMillis;
-unsigned long       SendInterval       = 0;
-unsigned long       myChannelNumber    = SECRET_CH_ID;
-const char *        myWriteAPIKey      = SECRET_WRITE_APIKEY;
+unsigned long       SendInterval             = 0;
+unsigned long       myChannelNumber          = SECRET_CH_ID;
+const char *        myWriteAPIKey            = SECRET_WRITE_APIKEY;
 ////
    float SendPressure = 0;
    float SendPaLow = 0;
@@ -65,7 +65,7 @@ typedef enum
 } sensorState;
 
 static sensorState currentSdp810State = IDLE_STATE;
-static sensorState prevState = IDLE_STATE;
+static sensorState prevState          = IDLE_STATE;
 /***************************   Constants   ***********************************/
 /***************************   Global Variables   ****************************/
 /***************************   Function Prototypes   *************************/
@@ -77,7 +77,7 @@ void ConnectWiFi(void);
 void GetSdPressure(void);
 void ResetSensor_1(void);
 void SendToServer(void);          // Send PA data to server 
-void BlinkLED_BUILTIN (void);
+void BlinkLED (void);
 /******************************************************************************
 Function name : void setup()
          Type : PRIVATE
@@ -111,7 +111,7 @@ void loop(){
     if (ResetCounter >= 240){
       ESP.restart();
     }  
-    BlinkLED_BUILTIN ();
+    BlinkLED ();
 } // END loop
 /******************************************************************************
 Function name : 
@@ -163,17 +163,17 @@ volatile static int        data[8];
          //
         case READ_I2C_SENSOR_STATE:
             // step : request reading from sensor
-            Wire.requestFrom(SDP810_I2C_ADDR, 8);    // request 2 + crc bytes from slave device #37 (0x25)
+            Wire.requestFrom(SDP810_I2C_ADDR, 8);    // request 8 bytes from slave device #37 (0x25)
             for (n=0;n<8;n++)
             {
-                data[n] = Wire.read();          // receive high byte (overwrites previous reading)
+                data[n] = Wire.read();          // receive byte (overwrites previous reading)
             }
             pressure_sint = (int16_t)(data[0]*256+data[1]);
             difPressure_1 = (float)(pressure_sint) / data[7]; // Scale Factor for 125pa type
-            if((difPressure_1 >= 130) || (difPressure_1 <= -130)){
-              Serial.println("error");
-              break;
-            }
+              if((difPressure_1 >= 130) || (difPressure_1 <= -130)){
+                Serial.println("error");
+                break;
+               }
             temperatur_sint = (int16_t)(data[3]*256+data[4]);
             temperatur_1 = (float)(temperatur_sint) / data[7]; // Scale Factor "data byte 7"
             FilteredPressure_1 = FILTER_CONST*FilteredPressure_1 + difPressure_1*(1-FILTER_CONST);
@@ -196,15 +196,15 @@ volatile static int        data[8];
             break;
         //    
         case PRINT_SDP_VALUE_STATE:{
-        if (millis() - printInterval >= 1000) {
-          ResetCounter++;
-          Serial.print(FilteredPressure_1);
-          Serial.print(" ");
-          Serial.print(pa_low);
-          Serial.print(" ");
-          Serial.println(pa_high);
-          printInterval = millis(); 
-         }
+          if (millis() - printInterval >= 1000) {
+            ResetCounter++;
+            /*Serial.print(FilteredPressure_1);
+            Serial.print(" ");
+            Serial.print(pa_low);
+            Serial.print(" ");
+            Serial.println(pa_high);*/
+            printInterval = millis(); 
+           }
             // Move to next state
             currentSdp810State = IDLE_STATE;
          }
@@ -221,19 +221,18 @@ Function name : void SetupESP32(void)
 Description   : 
 Notes :
 ******************************************************************************/
-void SetupESP32()
- {
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH); // set to known state
-    Wire.setClock(400000);  // Set I2C clock to 400 kHz
+void SetupESP32(){
+    pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);    // set to known state
+    Wire.setClock(400000);              // Set I2C clock to 400 kHz
     Serial.begin(115200);
     Wire.begin( I2C_SDA , I2C_SCL );
-    ThingSpeak.begin(client);  // Initialize ThingSpeak
+    ThingSpeak.begin(client);           // Initialize ThingSpeak
     SendStatus = false;
-    LED_BUILTINOnOffTime          = 6000;    
+    LEDOnOffTime       = 6000;    
     delay(100);
  }
- /******************************************************************************
+/******************************************************************************
 Function name : void ResetSensor_1()
          Type :
 Description   : Send reset to SDP810 adr 0x25
@@ -242,12 +241,11 @@ Notes :
 void ResetSensor_1()
 {
    // step : instruct sensor command
-   delay(50);
+   delay(5);
    Wire.beginTransmission(SDP810_I2C_ADDR); // transmit to device #37 (0x25)
    Wire.write(byte(0x00)); // msb
    Wire.write(byte(0x06)); // lsb command sensor Soft Reset (0x0006)
    Wire.endTransmission(); // stop transmitting
-   delay(50);
 }
 /******************************************************************************
 Function name : void Setup_wifi()
@@ -269,9 +267,6 @@ Notes :
    SendInterval = millis();
    //int rssi = WiFi.RSSI(); 
    int Sendrssi;
-//   float SendPressure = 0;
-//   float SendPaLow = 0;
-//   float SendPaHigh = 0;
    float SendTemperatur = 0;
   // set the fields with the values
   ThingSpeak.setField(1, SendPressure = (round(FilteredPressure_1 * 100) / 100.00) );
@@ -279,24 +274,21 @@ Notes :
   ThingSpeak.setField(3, SendPaHigh = (round(pa_high * 100) / 100.00) );
   ThingSpeak.setField(4, SendTemperatur = (round(FilteredTemperatur_1 * 100) / 100.00) );
   ThingSpeak.setField(5, WiFi.RSSI() );
-        
   // set the status
-   // write to the ThingSpeak channel
+  // write to the ThingSpeak channel
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
    if(x == 200){
     Serial.println(String(x));
-    LED_BUILTINOnOffTime = 500;
+    LEDOnOffTime = 500;
     ResetCounter = 0;
   }
   else{
     Serial.println(String(x));
-    LED_BUILTINOnOffTime = 100;
+    LEDOnOffTime = 100;
   }
-    Serial.println("send");
-            Serial.println(SendPressure);
-          Serial.println(SendPaLow);
-          Serial.println(SendPaHigh);
-  Serial.println("end");
+    Serial.println(SendPressure);
+    Serial.println(SendPaLow);
+    Serial.println(SendPaHigh);
  }
 /******************************************************************************
 Function name : void ConnectWiFi (void)
@@ -315,21 +307,21 @@ void ConnectWiFi(){
       delay(1000);     
     } 
     Serial.println("\nConnected.");
-    LED_BUILTINOnOffTime       = 2000;
+    LEDOnOffTime       = 2000;
   }  
 }
 /******************************************************************************
-Function name : void BlinkLED_BUILTIN (void)
+Function name : void BlinkLED (void)
          Type :
 Description   :  
 Notes : 
 /*****************************************************************************/
-void BlinkLED_BUILTIN(){
-static unsigned long       LED_BUILTINblinkInterval        = millis();
+void BlinkLED(){
+static unsigned long       LEDblinkInterval        = millis();
 
-        if (millis() - LED_BUILTINblinkInterval >= LED_BUILTINOnOffTime) {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            LED_BUILTINblinkInterval = millis();              
+        if (millis() - LEDblinkInterval >= LEDOnOffTime) {
+            digitalWrite(LED, !digitalRead(LED));
+            LEDblinkInterval = millis();              
          }
 }   
 /*****************************************************************************/              
