@@ -166,11 +166,15 @@ volatile static int        data[8];
             pressure_sint = (int16_t)(data[0]*256+data[1]);
             difPressure_1 = (float)(pressure_sint) / data[7]; // Scale Factor for 125pa type
               if((difPressure_1 >= 130) || (difPressure_1 <= -130)){
-                Serial.println("error");
+                Serial.println("DP error");
                 break;
                }
             temperatur_sint = (int16_t)(data[3]*256+data[4]);
             temperatur_1 = (float)(temperatur_sint) / data[7]; // Scale Factor "data byte 7"
+              if((temperatur_1 >= 85) || (temperatur_1 <= -30)){
+                Serial.println("T error");
+                break;
+               }
             FilteredPressure_1 = FILTER_CONST*FilteredPressure_1 + difPressure_1*(1-FILTER_CONST);
             FilteredTemperatur_1 = FILTER_CONST*FilteredTemperatur_1 + temperatur_1*(1-FILTER_CONST);
               if (difPressure_1 < pa_low)
@@ -262,7 +266,7 @@ Notes :
   ThingSpeak.setField(5, WiFi.RSSI() );
   // set the status
   // write to the ThingSpeak channel
-  static int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+  int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
    if(x == 200){
     Serial.println(String(x));
     LEDOnOffTime = 500;
