@@ -42,11 +42,7 @@ unsigned long       currentMillis;
 unsigned long       SendInterval             = 0;
 unsigned long       myChannelNumber          = SECRET_CH_ID;
 const char *        myWriteAPIKey            = SECRET_WRITE_APIKEY;
-////
-   float SendPressure = 0;
-   float SendPaLow = 0;
-   float SendPaHigh = 0;
-///
+
 /*****************************************************************************/
 char ssid[] = SECRET_SSID;   // your network SSID (name) 
 char pass[] = SECRET_PASS;   // your network password
@@ -60,8 +56,7 @@ typedef enum
     IDLE_STATE = 0, 
     SEND_I2C_READ_SENSOR_STATE = 1, 
     READ_I2C_SENSOR_STATE = 2,
-    SDP_TO_FLOW_STATE = 3,
-    PRINT_SDP_VALUE_STATE = 4
+    PRINT_SDP_VALUE_STATE = 3
 } sensorState;
 
 static sensorState currentSdp810State = IDLE_STATE;
@@ -161,7 +156,7 @@ volatile static int        data[8];
         }    
             break;
          //
-        case READ_I2C_SENSOR_STATE:
+        case READ_I2C_SENSOR_STATE:{
             // step : request reading from sensor
             Wire.requestFrom(SDP810_I2C_ADDR, 8);    // request 8 bytes from slave device #37 (0x25)
             for (n=0;n<8;n++)
@@ -178,31 +173,21 @@ volatile static int        data[8];
             temperatur_1 = (float)(temperatur_sint) / data[7]; // Scale Factor "data byte 7"
             FilteredPressure_1 = FILTER_CONST*FilteredPressure_1 + difPressure_1*(1-FILTER_CONST);
             FilteredTemperatur_1 = FILTER_CONST*FilteredTemperatur_1 + temperatur_1*(1-FILTER_CONST);
-            currentSdp810State = SDP_TO_FLOW_STATE;
               if (difPressure_1 < pa_low)
                 {
                   pa_low = difPressure_1;     
                 }
-              if (difPressure_1 > pa_high)
+              else if (difPressure_1 > pa_high)
                {
                   pa_high = difPressure_1;  
                }
-            break;
-        //    
-        case SDP_TO_FLOW_STATE:{
-            // Move to next state 
             currentSdp810State = PRINT_SDP_VALUE_STATE;
-          }
             break;
+        }  
         //    
         case PRINT_SDP_VALUE_STATE:{
           if (millis() - printInterval >= 1000) {
             ResetCounter++;
-            /*Serial.print(FilteredPressure_1);
-            Serial.print(" ");
-            Serial.print(pa_low);
-            Serial.print(" ");
-            Serial.println(pa_high);*/
             printInterval = millis(); 
            }
             // Move to next state
@@ -265,8 +250,9 @@ Notes :
 /*****************************************************************************/
  void SendToServer(){
    SendInterval = millis();
-   //int rssi = WiFi.RSSI(); 
-   int Sendrssi;
+   float SendPressure = 0;
+   float SendPaLow = 0;
+   float SendPaHigh = 0; 
    float SendTemperatur = 0;
   // set the fields with the values
   ThingSpeak.setField(1, SendPressure = (round(FilteredPressure_1 * 100) / 100.00) );
@@ -276,7 +262,7 @@ Notes :
   ThingSpeak.setField(5, WiFi.RSSI() );
   // set the status
   // write to the ThingSpeak channel
-  int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+  static int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
    if(x == 200){
     Serial.println(String(x));
     LEDOnOffTime = 500;
