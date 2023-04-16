@@ -56,7 +56,6 @@ typedef enum
     READ_I2C_SENSOR_STATE = 2,
     PRINT_SDP_VALUE_STATE = 3
 } sensorState;
-
 static sensorState currentSdp810State = IDLE_STATE;
 static sensorState prevState          = IDLE_STATE;
 /***************************   Constants   ***********************************/
@@ -117,7 +116,6 @@ Function name : GetSdPressure(void)
 Description   : Read Sensor value use FSM
 Notes :
 ******************************************************************************/
-//
 void GetSdPressure(void){
 /***************************   Local Variables   *****************************/
 volatile static float      difPressure_1        = 0.0;
@@ -209,7 +207,7 @@ Notes :
 ******************************************************************************/
 void SetupESP32(){
     pinMode(LED, OUTPUT);
-    digitalWrite(LED, HIGH);    // set to known state
+    digitalWrite(LED, HIGH);            // set to known state
     Wire.setClock(400000);              // Set I2C clock to 400 kHz
     Serial.begin(115200);
     Wire.begin( I2C_SDA , I2C_SCL );
@@ -223,15 +221,14 @@ Function name : void ResetSensor_1()
 Description   : Send reset to SDP810 adr 0x25
 Notes :
 ******************************************************************************/
-void ResetSensor_1()
-{
+void ResetSensor_1(){
    // step : instruct sensor command
    delay(5);
    Wire.beginTransmission(SDP810_I2C_ADDR); // transmit to device #37 (0x25)
    Wire.write(byte(0x00)); // msb
    Wire.write(byte(0x06)); // lsb command sensor Soft Reset (0x0006)
    Wire.endTransmission(); // stop transmitting
-}
+ }
 /******************************************************************************
 Function name : void Setup_wifi()
          Type :
@@ -264,18 +261,18 @@ Notes :
   // write to the ThingSpeak channel
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
    if(x == 200){
-    Serial.println(String(x));
-    LEDOnOffTime = 500;
-    ResetCounter = 0;
-  }
-  else{
-    Serial.println(String(x));
+      Serial.println(String(x));
+      LEDOnOffTime = 500;
+      ResetCounter = 0;
+   }
+  else{ 
+    Serial.println(String(x)); // ERROR connect Thingspeak.com
     LEDOnOffTime = 100;
-  }
+   }
     Serial.println(SendPressure);
     Serial.println(SendPaLow);
     Serial.println(SendPaHigh);
- }
+  }
 /******************************************************************************
 Function name : void ConnectWiFi (void)
          Type :
@@ -287,11 +284,11 @@ void ConnectWiFi(){
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("Attempting to connect to SSID:  ");
     Serial.println(SECRET_SSID);
-    while(WiFi.status() != WL_CONNECTED){
-      WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
-      Serial.print(".");
-      delay(1000);     
-    } 
+  while(WiFi.status() != WL_CONNECTED){
+    WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
+    Serial.print(".");
+    delay(1000);     
+   } 
     Serial.println("\nConnected.");
     LEDOnOffTime       = 2000;
   }  
@@ -304,10 +301,9 @@ Notes :
 /*****************************************************************************/
 void BlinkLED(){
 static unsigned long       LEDblinkInterval        = millis();
-
-        if (millis() - LEDblinkInterval >= LEDOnOffTime) {
-            digitalWrite(LED, !digitalRead(LED));
-            LEDblinkInterval = millis();              
-         }
+  if (millis() - LEDblinkInterval >= LEDOnOffTime){
+    digitalWrite(LED, !digitalRead(LED));
+    LEDblinkInterval = millis();              
+   }
 }   
 /*****************************************************************************/              
