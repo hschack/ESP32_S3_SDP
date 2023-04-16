@@ -213,7 +213,7 @@ void SetupESP32(){
     Wire.begin( I2C_SDA , I2C_SCL );
     ThingSpeak.begin(client);           // Initialize ThingSpeak
     LEDOnOffTime       = 6000;    
-    delay(100);
+    delay(100); 
  }
 /******************************************************************************
 Function name : void ResetSensor_1()
