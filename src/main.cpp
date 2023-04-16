@@ -18,7 +18,7 @@ Description: Draft Samsø Boiler 4
 #include "secrets.h"
 #include "ThingSpeak.h" // always include thingspeak header file after other header files and custom macros
 /***************************   Defines   *************************************/
-#define LED                       7 // the number of the ALIVELED pin
+#define LED                       38 // the number of the ALIVELED pin
 #define SDP810_I2C_ADDR           0x25 // I2C Address for SDP8xx device
 #define FILTER_CONST              0.90f //
 #define PRINT_DEBUG_MESSAGES
@@ -29,16 +29,14 @@ Description: Draft Samsø Boiler 4
 /***************************   Macros   **************************************/
 /***************************   Data Types   **********************************/
 /***************************   Local Variables   *****************************/
-bool                SendStatus = false;
 volatile float      FilteredPressure_1       = 0;
 volatile float      FilteredTemperatur_1     = 0;
 volatile float      pa_low                   = 0;
 volatile float      pa_high                  = 0;
 //
 unsigned int        ResetCounter             = 0;
-unsigned int        LEDOnOffTime     = 5000;
+unsigned int        LEDOnOffTime             = 5000;
 unsigned long       previousMillis           = 0; // will store last time LED was updated
-unsigned long       currentMillis;
 unsigned long       SendInterval             = 0;
 unsigned long       myChannelNumber          = SECRET_CH_ID;
 const char *        myWriteAPIKey            = SECRET_WRITE_APIKEY;
@@ -100,8 +98,7 @@ void loop(){
     if (millis() - SendInterval >= 60000) {
         SendToServer();
         pa_low  = 0.0;
-        pa_high = 0.0;
-        //SendInterval = millis();          
+        pa_high = 0.0;         
       }
     if (ResetCounter >= 240){
       ESP.restart();
@@ -132,7 +129,7 @@ volatile int               pressure_sint;
 volatile int               temperatur_sint;
 volatile static int        data[8];
 //
-    switch (currentSdp810State) 
+  switch (currentSdp810State) 
     {
         case IDLE_STATE:{
             // Do nothing here for now
@@ -196,7 +193,7 @@ volatile static int        data[8];
            }
             // Move to next state
             currentSdp810State = IDLE_STATE;
-         }
+           }
             break;
         //    
         default:
@@ -217,7 +214,6 @@ void SetupESP32(){
     Serial.begin(115200);
     Wire.begin( I2C_SDA , I2C_SCL );
     ThingSpeak.begin(client);           // Initialize ThingSpeak
-    SendStatus = false;
     LEDOnOffTime       = 6000;    
     delay(100);
  }
