@@ -222,12 +222,12 @@ Description   : Send reset to SDP810 adr 0x25
 Notes :
 ******************************************************************************/
 void ResetSensor_1(){
-   // step : instruct sensor command
-   delay(5);
-   Wire.beginTransmission(SDP810_I2C_ADDR); // transmit to device #37 (0x25)
-   Wire.write(byte(0x00)); // msb
-   Wire.write(byte(0x06)); // lsb command sensor Soft Reset (0x0006)
-   Wire.endTransmission(); // stop transmitting
+    // step : instruct sensor command
+    delay(5);
+    Wire.beginTransmission(SDP810_I2C_ADDR); // transmit to device #37 (0x25)
+    Wire.write(byte(0x00)); // msb
+    Wire.write(byte(0x06)); // lsb command sensor Soft Reset (0x0006)
+    Wire.endTransmission(); // stop transmitting
  }
 /******************************************************************************
 Function name : void Setup_wifi()
